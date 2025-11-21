@@ -1,7 +1,7 @@
 {
   "id": "universal-spellbook-5E",
   "title": "Universal Spellbook",
-  "description": "The most beautiful animated, lootable spellbook for Foundry VTT. Auto-creates themed books, ritual tabs spell slots search drag-drop works on every system.",
+  "description": "Gorgeous animated lootable spellbook with class-themed icons, ritual tab, spell slots, search, prepare, cast and drag-drop. Works on every system.",
   "version": "3.0.0",
   "authors": [
     {
@@ -12,11 +12,12 @@
     "minimum": "11",
     "verified": "12"
   },
-  "esmodules": ["universal-spellbook.js"],
-  "styles": ["spellbook.css"],
-  "relationships": {
-    "systems": []
-  },
+  "esmodules": [
+    "universal-spellbook.js"
+  ],
+  "styles": [
+    "spellbook.css"
+  ],
   "url": "https://github.com/sereptus-777/universal-spellbook-5E",
   "manifest": "https://raw.githubusercontent.com/sereptus-777/universal-spellbook-5E/main/module.json",
   "download": "https://github.com/sereptus-777/universal-spellbook-5E/archive/refs/heads/main.zip"
