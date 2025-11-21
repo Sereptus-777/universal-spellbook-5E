@@ -7,6 +7,7 @@
   "compatibility": { "minimum": "11", "verified": "12" },
   "esmodules": ["universal-spellbook.js"],
   "styles": ["spellbook.css"],
-  "url": "https://github.com/sereptus-777/universal-spellbook",
-  "manifest": "https://raw.githubusercontent.com/sereptus-777/universal-spellbook/main/module.json",
+  "manifest": "https://raw.githubusercontent.com/sereptus-777/universal-spellbook-5E/main/module.json",
+"url": "https://github.com/sereptus-777/universal-spellbook-5E",
   "download": "https://github.com/sereptus-777/universal-spellbook-5E/archive/refs/heads/main.zip"
+
