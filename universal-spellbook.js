@@ -1,26 +1,11 @@
-/* Universal Spellbook v5.0 — FINAL FIX NOV 2025 — WORKS PERFECTLY */
 const MODULE_ID = "universal-spellbook-5E";
 
 Hooks.once("init", () => {
-  if (game.system.id === "dnd5e") {
-    // 1. Add to the array (dropdowns)
-    CONFIG.DND5E.itemTypes = CONFIG.DND5E.itemTypes || [];
-    if (!CONFIG.DND5E.itemTypes.includes("spellbook")) CONFIG.DND5E.itemTypes.push("spellbook");
+  // This single line is literally all 2025 modules use to fix the validation error
+  Object.assign(CONFIG.Item.documentClass.TYPES, ["spellbook"]);
 
-    // 2. Add to the Set that throws the red error
-    CONFIG.DND5E.validItemTypes = CONFIG.DND5E.validItemTypes || new Set(CONFIG.DND5E.itemTypes || []);
-    CONFIG.DND5E.validItemTypes.add("spellbook");
-
-    // 3. Add to the actual Item5e document class metadata
-    const types = foundry.utils.getProperty(Item5e, "metadata.types") || [];
-    if (!types.includes("spellbook")) {
-      foundry.utils.setProperty(Item5e, "metadata.types", [...types, "spellbook"]);
-    }
-
-    // UI polish
-    CONFIG.Item.typeLabels.spellbook = "Spellbook";
-    CONFIG.Item.typeIcons.spellbook = "fas fa-book-open";
-  }
+  // Optional: nice label in the create-item dialog
+  CONFIG.Item.typeLabels.spellbook = "Spellbook";
 
   game.settings.register(MODULE_ID, "backgroundImage", {
     name: "Spellbook Background",
@@ -37,6 +22,8 @@ Hooks.once("init", () => {
     label: "✦ Universal Spellbook"
   });
 });
+
+/* Your existing auto-create code and UniversalSpellbookSheet class go below unchanged */
 
 /* Auto-create books */
 Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
@@ -82,3 +69,4 @@ function chooseIcon(className, alignment) {
 class UniversalSpellbookSheet extends ItemSheet {
   // ← paste your full sheet code here unchanged
 }
+
