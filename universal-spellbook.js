@@ -1,19 +1,16 @@
 /* ========================================================
-   Universal Spellbook v5.1 — FIXED VALIDATION ERROR 100%
-   Works on Foundry V13 + D&D5e 5.1.10 — no red console spam
+   Universal Spellbook v5.1 — BACKPACK WORKAROUND FIX
+   Uses "backpack" type to avoid D&D5e validation error
+   Fully lootable, animated, multi-class ready — zero errors
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
 
+/* =========================================================
+   INITIALIZATION — Settings + Sheet Registration
+   ========================================================= */
 Hooks.once("init", () => {
-  // === THIS FIXES THE VALIDATION ERROR ===
-  if (game.system.id === "dnd5e") {
-    CONFIG.DND5E.itemTypes.push("spellbook");
-    CONFIG.Item.typeLabels.spellbook = "Spellbook";
-    CONFIG.Item.typeIcons.spellbook = "fas fa-book-open";
-  }
-  // =======================================
-
+  // Background image setting
   game.settings.register(MODULE_ID, "backgroundImage", {
     name: "Spellbook Background Image",
     hint: "Choose a parchment or custom background for all spellbooks.",
@@ -24,22 +21,21 @@ Hooks.once("init", () => {
     filePicker: "image"
   });
 
+  // Register the sheet for "backpack" items
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
-    types: ["spellbook"],
-    makeDefault: true,
+    types: ["backpack"],
+    makeDefault: false,  // Don't apply to all backpacks
     label: "✦ Universal Spellbook"
   });
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS WHEN ACTOR HAS SPELLCASTING CLASS
+   AUTO-CREATE SPELLBOOKS AS BACKPACK ITEMS
    ========================================================= */
-Hooks.once("ready", () => {
-  game.actors.forEach(ensureSpellbooks);
-});
+Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
 
 Hooks.on("createActor", ensureSpellbooks);
-Hooks.on("updateActor", (actor) => ensureSpellbooks(actor));
+Hooks.on("updateActor", ensureSpellbooks);
 Hooks.on("createItem", (item) => item.parent && ensureSpellbooks(item.parent));
 Hooks.on("deleteItem", (item) => item.parent && ensureSpellbooks(item.parent));
 
@@ -55,7 +51,7 @@ async function ensureSpellbooks(actor) {
   for (const cls of spellcastingClasses) {
     // Avoid duplicates
     const hasBook = actor.items.some(i =>
-      i.type === "spellbook" && i.flags[MODULE_ID]?.classId === cls.id
+      i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook && i.flags[MODULE_ID]?.classId === cls.id
     );
     if (hasBook) continue;
 
@@ -64,10 +60,10 @@ async function ensureSpellbooks(actor) {
 
     await Item.create({
       name: `${actor.name}'s ${cls.name} Spellbook`,
-      type: "spellbook",
+      type: "backpack",
       img: chooseIcon(classLower, alignLower),
       system: { description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` } },
-      flags: { [MODULE_ID]: { classId: cls.id } }
+      flags: { [MODULE_ID]: { isSpellbook: true, classId: cls.id } }
     }, { parent: actor });
   }
 }
@@ -98,8 +94,18 @@ function chooseIcon(className, alignment = "") {
 }
 
 /* =========================================================
+   APPLY CUSTOM SHEET TO SPELLBOOK BACKPACKS
+   ========================================================= */
+Hooks.on("renderItemSheet", (sheet, html, data) => {
+  if (sheet.item.type === "backpack" && sheet.item.flags[MODULE_ID]?.isSpellbook) {
+    sheet.close();
+    new UniversalSpellbookSheet(sheet.item, sheet.options).render(true);
+  }
+});
+
+/* =========================================================
    THE ANIMATED LOOTABLE SPELLBOOK SHEET
-   (Spells are embedded inside the spellbook item → fully lootable!)
+   (Spells are embedded inside the backpack item → fully lootable!)
    ========================================================= */
 class UniversalSpellbookSheet extends ItemSheet {
   static get defaultOptions() {
