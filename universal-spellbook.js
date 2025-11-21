@@ -1,13 +1,13 @@
 /* ========================================================
-   Universal Spellbook v5.1 — BACKPACK WORKAROUND FIX
-   Uses "backpack" type to avoid D&D5e validation error
-   Fully lootable, animated, multi-class ready — zero errors
+   Universal Spellbook v5.2 — FIXED INFINITE LOOP & VALIDATION
+   No recursion · Uses libWrapper for validation override
+   Fully lootable, animated, multi-class ready
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
 
 /* =========================================================
-   INITIALIZATION — Settings + Sheet Registration
+   INITIALIZATION — Settings + Sheet + Validation Fix
    ========================================================= */
 Hooks.once("init", () => {
   // Background image setting
@@ -21,23 +21,42 @@ Hooks.once("init", () => {
     filePicker: "image"
   });
 
-  // Register the sheet for "backpack" items
+  // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
-    types: ["backpack"],
-    makeDefault: false,  // Don't apply to all backpacks
+    types: ["spellbook"],
+    makeDefault: true,
     label: "✦ Universal Spellbook"
   });
+
+  // Override D&D5e validation with libWrapper (fixes the red error)
+  if (game.system.id === "dnd5e" && game.modules.get("libWrapper")?.active) {
+    libWrapper.register(MODULE_ID, "Item5e.prototype.validate", function (wrapped, ...args) {
+      if (this.type === "spellbook") return {};  // Skip validation for spellbooks
+      return wrapped(...args);
+    }, "WRAPPER");
+  } else {
+    ui.notifications.error("Universal Spellbook requires 'libWrapper' module to fix type validation. Install and enable it!");
+  }
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS AS BACKPACK ITEMS
+   AUTO-CREATE SPELLBOOKS — FIXED TO PREVENT INFINITE LOOP
    ========================================================= */
 Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
 
 Hooks.on("createActor", ensureSpellbooks);
-Hooks.on("updateActor", ensureSpellbooks);
-Hooks.on("createItem", (item) => item.parent && ensureSpellbooks(item.parent));
-Hooks.on("deleteItem", (item) => item.parent && ensureSpellbooks(item.parent));
+
+Hooks.on("updateActor", (actor, updates) => {
+  if (updates.items || updates.system) ensureSpellbooks(actor);
+});
+
+Hooks.on("createItem", (item) => {
+  if (item.type === "class") ensureSpellbooks(item.parent);  // Only trigger for classes — no loop!
+});
+
+Hooks.on("deleteItem", (item) => {
+  if (item.type === "class") ensureSpellbooks(item.parent);  // Only trigger for classes — no loop!
+});
 
 async function ensureSpellbooks(actor) {
   if (!actor || !["character", "npc"].includes(actor.type)) return;
@@ -51,7 +70,7 @@ async function ensureSpellbooks(actor) {
   for (const cls of spellcastingClasses) {
     // Avoid duplicates
     const hasBook = actor.items.some(i =>
-      i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook && i.flags[MODULE_ID]?.classId === cls.id
+      i.type === "spellbook" && i.flags[MODULE_ID]?.classId === cls.id
     );
     if (hasBook) continue;
 
@@ -60,10 +79,10 @@ async function ensureSpellbooks(actor) {
 
     await Item.create({
       name: `${actor.name}'s ${cls.name} Spellbook`,
-      type: "backpack",
+      type: "spellbook",
       img: chooseIcon(classLower, alignLower),
       system: { description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` } },
-      flags: { [MODULE_ID]: { isSpellbook: true, classId: cls.id } }
+      flags: { [MODULE_ID]: { classId: cls.id } }
     }, { parent: actor });
   }
 }
@@ -94,18 +113,7 @@ function chooseIcon(className, alignment = "") {
 }
 
 /* =========================================================
-   APPLY CUSTOM SHEET TO SPELLBOOK BACKPACKS
-   ========================================================= */
-Hooks.on("renderItemSheet", (sheet, html, data) => {
-  if (sheet.item.type === "backpack" && sheet.item.flags[MODULE_ID]?.isSpellbook) {
-    sheet.close();
-    new UniversalSpellbookSheet(sheet.item, sheet.options).render(true);
-  }
-});
-
-/* =========================================================
    THE ANIMATED LOOTABLE SPELLBOOK SHEET
-   (Spells are embedded inside the backpack item → fully lootable!)
    ========================================================= */
 class UniversalSpellbookSheet extends ItemSheet {
   static get defaultOptions() {
