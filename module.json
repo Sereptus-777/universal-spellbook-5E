@@ -1,14 +1,13 @@
 {
   "id": "universal-spellbook",
-  "title": "Universal Spellbook – Ultimate Edition",
-  "description": "The most beautiful animated spellbook ever made. Auto-creates itself, ritual tab, spell slot tracker, custom backgrounds, search, drag & drop, prepare, cast, delete, class-themed icons.",
-  "version": "2.5.0",
-  "authors": [{ "Sereptus": "Sereptus & Grok" }],
+  "title": "Universal Spellbook",
+  "description": "Gorgeous animated lootable spellbook with class-themed icons ritual tab spell slots works on every system",
+  "version": "3.0.0",
+  "authors": [{ "name": "sereptus-777" }],
   "compatibility": { "minimum": "11", "verified": "12" },
   "esmodules": ["universal-spellbook.js"],
   "styles": ["spellbook.css"],
-  "packs": [],
-  "url": "https://github.com/sereptus/universal-spellbook",
-  "manifest": "https://raw.githubusercontent.com/sereptus/universal-spellbook/main/module.json",
-  "download": "https://github.com/sereptus/universal-spellbook/archive/refs/heads/main.zip"
+  "url": "https://github.com/sereptus-777/universal-spellbook",
+  "manifest": "https://raw.githubusercontent.com/sereptus-777/universal-spellbook/main/module.json",
+  "download": "https://github.com/sereptus-777/universal-spellbook/archive/refs/heads/main.zip"
 }
