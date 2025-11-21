@@ -1,19 +1,9 @@
-/* ========================================================
-   Universal Spellbook v5.0 — CLEAN & FINAL 2025 VERSION
-   Works perfectly with documentTypes in module.json
-   No CONFIG hacks · No validation errors · Fully lootable
-   ======================================================== */
-
 const MODULE_ID = "universal-spellbook-5E";
 
-/* =========================================================
-   INITIALIZATION — Settings + Sheet Registration
-   ========================================================= */
 Hooks.once("init", () => {
-  // Background image setting (in Configure Settings → Module Settings)
+  // ONLY settings and sheet registration — nothing else!
   game.settings.register(MODULE_ID, "backgroundImage", {
-    name: "Spellbook Background Image",
-    hint: "Choose a parchment or custom background for all spellbooks.",
+    name: "Spellbook Background",
     scope: "world",
     config: true,
     type: String,
@@ -21,13 +11,15 @@ Hooks.once("init", () => {
     filePicker: "image"
   });
 
-  // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
     types: ["spellbook"],
     makeDefault: true,
     label: "✦ Universal Spellbook"
   });
 });
+
+/* ==== AUTO-CREATE & ALL YOUR OTHER CODE BELOW (unchanged) ==== */
+// (keep your ensureSpellbooks function, chooseIcon, and the entire UniversalSpellbookSheet class exactly as they are — they are perfect)
 
 /* =========================================================
    AUTO-CREATE SPELLBOOKS WHEN ACTOR HAS SPELLCASTING CLASS
@@ -229,3 +221,4 @@ class UniversalSpellbookSheet extends ItemSheet {
     return html;
   }
 }
+
