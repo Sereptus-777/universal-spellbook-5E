@@ -1,0 +1,50 @@
+<form class="{{cssClass}} flexcol" autocomplete="off" style="--book-bg: url('{{background}}')">
+  <header class="spellbook-header">
+    <img src="{{item.img}}" width="100" height="100" style="border:none"/>
+    <h1>{{item.name}}</h1>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" class="search" placeholder="Search spells..."/>
+  </div>
+
+  {{!-- Spell Slots Tracker (5e & PF2e compatible) --}}
+  <div class="spell-slots-tracker">
+    {{#if (or actor.system.spells actor.system.attributes.spellSlots)}}
+      Spell Slots / Points Remaining<br/>
+      {{!-- 5e --}}
+      {{#each actor.system.spells as |pool key|}}
+        {{#if (ne key "pact")}}<strong>Level {{@key}}:</strong> {{pool.value}} / {{pool.max}} &nbsp;&nbsp;{{/if}}
+      {{/each}}
+      {{!-- PF2e focus points etc. --}}
+      {{#if actor.system.resources.focus}} | Focus: {{actor.system.resources.focus.value}}/{{actor.system.resources.focus.max}}{{/if}}
+    {{/if}}
+  </div>
+
+  <nav class="tabs" data-group="primary">
+    <a class="item" data-tab="all">All Spells</a>
+    <a class="item" data-tab="prepared">Prepared</a>
+    <a class="item" data-tab="rituals">Rituals Only</a>
+  </nav>
+
+  <section class="sheet-body">
+    {{#each spells as |list tab|}}
+      <div class="tab" data-group="primary" data-tab="{{tab}}">
+        {{#each (lookup ../spells tab) as |spell|}}
+          {{log spell}}
+          <div class="spell-entry item" data-id="{{spell.id}}">
+            {{#if ../actor.isOwner}}
+              <input type="checkbox" class="prepare-toggle" {{checked spell.system.preparation.prepared}} title="Prepared"/>
+              <a class="spell-delete" title="Delete">✕</a>
+            {{/if}}
+            <img src="{{spell.img}}" width="36" height="36"/>
+            <div class="spell-name">{{spell.name}} {{#if spell.system.level}} (Level {{spell.system.level}) {{/if}}</div>
+            {{#if spell.system.activation.cost}} ({{spell.system.activation.cost}} {{spell.system.activation.type}}){{/if}}
+          </div>
+        {{else}}
+          <p style="text-align:center; opacity:0.6;">No spells in this category yet.</p>
+        {{/each}}
+      </div>
+    {{/each}}
+  </section>
+</form>

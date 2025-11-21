@@ -1,0 +1,74 @@
+.universal-spellbook .window-content {
+  background: var(--book-bg, url("../icons/parchment.jpg")) !important;
+  background-size: cover !important;
+  color: #321;
+  font-family: "Bookinsanity", "Signika", serif;
+  padding: 15px;
+}
+
+.spellbook-opening {
+  pointer-events: none;
+  border-radius: 8px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.9);
+  filter: drop-shadow(0 0 30px goldenrod);
+}
+
+.spellbook-header {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2.5em;
+  text-shadow: 2px 2px 4px #000;
+  color: #b8860b;
+}
+
+.search-bar { margin: 10px 0; text-align: center; }
+.search-bar input {
+  width: 60%;
+  padding: 8px;
+  border-radius: 2px solid #654321;
+  border-radius: 20px;
+  background: rgba(255,255,240,0.9);
+}
+
+.spell-level {
+  margin-top: 20px;
+  border-top: 3px double #654321;
+  padding-top: 10px;
+}
+
+.spell-level h3 {
+  background: linear-gradient(to right, transparent, #8b4513, transparent);
+  color: white;
+  padding: 5px 0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.spell-entry {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  margin: 4px 0;
+  background: rgba(255,255,240,0.8);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.spell-entry:hover {
+  background: rgba(255,240,180,0.95);
+  transform: translateX(8px);
+  box-shadow: 0 0 15px gold;
+}
+
+.spell-entry img { margin-right: 10px; border: none; }
+.spell-name { flex: 1; }
+.spell-delete { color: darkred; cursor: pointer; font-size: 1.3em; }
+
+.spell-slots-tracker {
+  background: rgba(0,0,0,0.4);
+  padding: 10px;
+  border-radius: 10px;
+  margin: 15px 0;
+  color: white;
+  text-align: center;
+}
