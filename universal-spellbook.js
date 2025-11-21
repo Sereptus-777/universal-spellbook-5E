@@ -1,8 +1,9 @@
 /* ========================================================
-   Universal Spellbook v5.3 — FIXED INFINITE LOOP & DUPLICATES
-   Deletes all existing auto-created spellbooks first if any exist
-   Then adds only the latest correct ones (one per spellcasting class)
-   Uses libWrapper for validation override
+   Universal Spellbook v5.4 — FIXED DUPLICATES & VALIDATION
+   Deletes all existing spellbooks if >1 on actor (just once)
+   Then adds the latest correct ones (one per class)
+   Uses libWrapper for validation override (install libWrapper!)
+   Backpack type fallback if validation persists
    Fully lootable, animated, multi-class ready
    ======================================================== */
 
@@ -42,7 +43,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED TO DELETE EXISTING FIRST
+   AUTO-CREATE SPELLBOOKS — FIXED TO DELETE EXISTING IF >1
    ========================================================= */
 Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
 
@@ -63,11 +64,11 @@ Hooks.on("deleteItem", (item) => {
 async function ensureSpellbooks(actor) {
   if (!actor || !["character", "npc"].includes(actor.type)) return;
 
-  // Find all auto-created spellbooks (using flag)
-  const existingSpellbooks = actor.items.filter(i => i.type === "spellbook" && i.flags[MODULE_ID]?.classId);
+  // Find all existing spellbooks (type "spellbook" or flagged)
+  const existingSpellbooks = actor.items.filter(i => i.type === "spellbook" || i.flags[MODULE_ID]?.classId);
 
-  // If there are any existing spellbooks, delete them all first
-  if (existingSpellbooks.length > 0) {
+  // If there is more than one spellbook, delete all of them first (just once)
+  if (existingSpellbooks.length > 1) {
     const idsToDelete = existingSpellbooks.map(i => i.id);
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
   }
@@ -80,6 +81,12 @@ async function ensureSpellbooks(actor) {
   );
 
   for (const cls of spellcastingClasses) {
+    // Skip if a book for this class already exists (in case length was 1)
+    const hasBook = actor.items.some(i =>
+      i.type === "spellbook" && i.flags[MODULE_ID]?.classId === cls.id
+    );
+    if (hasBook) continue;
+
     const classLower = cls.name.toLowerCase();
     const alignLower = (actor.system.details?.alignment || "").toLowerCase();
 
