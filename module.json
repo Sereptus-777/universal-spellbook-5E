@@ -1,7 +1,7 @@
 {
   "id": "universal-spellbook-5E",
   "title": "Universal Spellbook",
-  "description": "Gorgeous animated, lootable spellbook with class-themed covers, ritual tab, spell-slot tracker, search, prepare, right-click cast and drag-drop spells directly into the book. Works on every system.",
+  "description": "Gorgeous animated lootable spellbook with class-themed icons, ritual tab, spell slots, search, prepare, cast and drag-drop. Works on every system.",
   "version": "5.0.0",
   "authors": [
     {
@@ -9,7 +9,7 @@
     }
   ],
   "compatibility": {
-    "minimum": "minimum": "11",
+    "minimum": "11",
     "verified": "12"
   },
   "esmodules": [
