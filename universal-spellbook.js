@@ -1,9 +1,19 @@
+/* ========================================================
+   Universal Spellbook v5.0 — CLEAN & FINAL 2025 VERSION
+   Works perfectly with documentTypes in module.json
+   No CONFIG hacks · No validation errors · Fully lootable
+   ======================================================== */
+
 const MODULE_ID = "universal-spellbook-5E";
 
+/* =========================================================
+   INITIALIZATION — Settings + Sheet Registration
+   ========================================================= */
 Hooks.once("init", () => {
-  // ONLY settings and sheet registration — nothing else!
+  // Background image setting (in Configure Settings → Module Settings)
   game.settings.register(MODULE_ID, "backgroundImage", {
-    name: "Spellbook Background",
+    name: "Spellbook Background Image",
+    hint: "Choose a parchment or custom background for all spellbooks.",
     scope: "world",
     config: true,
     type: String,
@@ -11,15 +21,13 @@ Hooks.once("init", () => {
     filePicker: "image"
   });
 
+  // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
     types: ["spellbook"],
     makeDefault: true,
     label: "✦ Universal Spellbook"
   });
 });
-
-/* ==== AUTO-CREATE & ALL YOUR OTHER CODE BELOW (unchanged) ==== */
-// (keep your ensureSpellbooks function, chooseIcon, and the entire UniversalSpellbookSheet class exactly as they are — they are perfect)
 
 /* =========================================================
    AUTO-CREATE SPELLBOOKS WHEN ACTOR HAS SPELLCASTING CLASS
@@ -29,7 +37,7 @@ Hooks.once("ready", () => {
 });
 
 Hooks.on("createActor", ensureSpellbooks);
-Hooks.on("updateActor", (actor) => ensureSpellbooks);
+Hooks.on("updateActor", (actor) => ensureSpellbooks(actor));
 Hooks.on("createItem", (item) => item.parent && ensureSpellbooks(item.parent));
 Hooks.on("deleteItem", (item) => item.parent && ensureSpellbooks(item.parent));
 
@@ -56,9 +64,7 @@ async function ensureSpellbooks(actor) {
       name: `${actor.name}'s ${cls.name} Spellbook`,
       type: "spellbook",
       img: chooseIcon(classLower, alignLower),
-      system: {
-        description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` }
-      },
+      system: { description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` } },
       flags: { [MODULE_ID]: { classId: cls.id } }
     }, { parent: actor });
   }
@@ -221,4 +227,3 @@ class UniversalSpellbookSheet extends ItemSheet {
     return html;
   }
 }
-
