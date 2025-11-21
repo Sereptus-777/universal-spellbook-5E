@@ -1,7 +1,7 @@
 {
   "id": "universal-spellbook-5E",
   "title": "Universal Spellbook",
-  "description": "Gorgeous animated lootable spellbook — class-themed, rituals, slots, search, drag-drop. Works everywhere.",
+  "description": "Gorgeous animated lootable spellbook with class-themed icons, ritual tab, spell slots, search, prepare, cast and drag-drop. Works on every system.",
   "version": "5.0.0",
   "authors": [{ "name": "sereptus-777" }],
   "compatibility": { "minimum": "11", "verified": "12" },
