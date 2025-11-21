@@ -1,6 +1,6 @@
 /* ========================================================
    Universal Spellbook v5.2 — FIXED INFINITE LOOP & VALIDATION
-   No recursion · Uses libWrapper for validation override
+   No recursion · libWrapper for validation override
    Fully lootable, animated, multi-class ready
    ======================================================== */
 
@@ -51,11 +51,11 @@ Hooks.on("updateActor", (actor, updates) => {
 });
 
 Hooks.on("createItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);  // Only trigger for classes — no loop!
+  if (item.type === "class") ensureSpellbooks(item.parent);  // Only for classes — no loop!
 });
 
 Hooks.on("deleteItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);  // Only trigger for classes — no loop!
+  if (item.type === "class") ensureSpellbooks(item.parent);  // Only for classes — no loop!
 });
 
 async function ensureSpellbooks(actor) {
