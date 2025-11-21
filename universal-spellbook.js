@@ -1,6 +1,8 @@
 /* ========================================================
-   Universal Spellbook v5.2 — FIXED INFINITE LOOP & VALIDATION
-   No recursion · libWrapper for validation override
+   Universal Spellbook v5.3 — FIXED INFINITE LOOP & DUPLICATES
+   Deletes all existing auto-created spellbooks first if any exist
+   Then adds only the latest correct ones (one per spellcasting class)
+   Uses libWrapper for validation override
    Fully lootable, animated, multi-class ready
    ======================================================== */
 
@@ -40,7 +42,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED TO PREVENT INFINITE LOOP
+   AUTO-CREATE SPELLBOOKS — FIXED TO DELETE EXISTING FIRST
    ========================================================= */
 Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
 
@@ -61,6 +63,16 @@ Hooks.on("deleteItem", (item) => {
 async function ensureSpellbooks(actor) {
   if (!actor || !["character", "npc"].includes(actor.type)) return;
 
+  // Find all auto-created spellbooks (using flag)
+  const existingSpellbooks = actor.items.filter(i => i.type === "spellbook" && i.flags[MODULE_ID]?.classId);
+
+  // If there are any existing spellbooks, delete them all first
+  if (existingSpellbooks.length > 0) {
+    const idsToDelete = existingSpellbooks.map(i => i.id);
+    await actor.deleteEmbeddedDocuments("Item", idsToDelete);
+  }
+
+  // Now create the latest correct spellbooks (one per class)
   const spellcastingClasses = actor.items.filter(i =>
     i.type === "class" &&
     ["wizard","sorcerer","cleric","druid","bard","ranger","paladin","warlock","artificer"]
@@ -68,12 +80,6 @@ async function ensureSpellbooks(actor) {
   );
 
   for (const cls of spellcastingClasses) {
-    // Avoid duplicates
-    const hasBook = actor.items.some(i =>
-      i.type === "spellbook" && i.flags[MODULE_ID]?.classId === cls.id
-    );
-    if (hasBook) continue;
-
     const classLower = cls.name.toLowerCase();
     const alignLower = (actor.system.details?.alignment || "").toLowerCase();
 
