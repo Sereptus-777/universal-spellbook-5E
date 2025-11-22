@@ -1,18 +1,34 @@
 /* ========================================================
-   Universal Spellbook v5.4 — FIXED DUPLICATES & VALIDATION
+   Universal Spellbook v5.3 — FIXED VALIDATION & DUPLICATES
+   Defines DataModel for "spellbook" sub-type (no validation error)
    Deletes all existing spellbooks if >1 on actor (just once)
-   Then adds the latest correct ones (one per class)
-   Uses libWrapper for validation override (install libWrapper!)
-   Backpack type fallback if validation persists
+   Adds only the latest correct ones (one per class)
    Fully lootable, animated, multi-class ready
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
 
 /* =========================================================
-   INITIALIZATION — Settings + Sheet + Validation Fix
+   CUSTOM DATAMODEL FOR SPELLBOOK SUB-TYPE (FIXES VALIDATION)
+   ========================================================= */
+class SpellbookDataModel extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      description: new fields.SchemaField({
+        value: new fields.HTMLField({ required: false, blank: true, initial: "" })
+      })
+    };
+  }
+}
+
+/* =========================================================
+   INITIALIZATION — Settings + Sheet + DataModel Registration
    ========================================================= */
 Hooks.once("init", () => {
+  // Register DataModel for "spellbook" sub-type (fixes validation error)
+  CONFIG.Item.dataModels.spellbook = SpellbookDataModel;
+
   // Background image setting
   game.settings.register(MODULE_ID, "backgroundImage", {
     name: "Spellbook Background Image",
@@ -30,16 +46,6 @@ Hooks.once("init", () => {
     makeDefault: true,
     label: "✦ Universal Spellbook"
   });
-
-  // Override D&D5e validation with libWrapper (fixes the red error)
-  if (game.system.id === "dnd5e" && game.modules.get("libWrapper")?.active) {
-    libWrapper.register(MODULE_ID, "Item5e.prototype.validate", function (wrapped, ...args) {
-      if (this.type === "spellbook") return {};  // Skip validation for spellbooks
-      return wrapped(...args);
-    }, "WRAPPER");
-  } else {
-    ui.notifications.error("Universal Spellbook requires 'libWrapper' module to fix type validation. Install and enable it!");
-  }
 });
 
 /* =========================================================
