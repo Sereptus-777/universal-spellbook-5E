@@ -1,35 +1,19 @@
 /* ========================================================
-   Universal Spellbook v5.3 — FIXED VALIDATION & DUPLICATES
-   Defines DataModel for "spellbook" sub-type (no validation error)
-   Deletes all existing spellbooks if >1 on actor (just once)
-   Adds only the latest correct ones (one per class)
-   Fully lootable, animated, multi-class ready
+   Universal Spellbook v5.1 — FIXED VALIDATION ERROR 100%
+   Works on Foundry V13 + D&D5e 5.1.10 — no red console spam
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
 
-/* =========================================================
-   CUSTOM DATAMODEL FOR SPELLBOOK SUB-TYPE (FIXES VALIDATION)
-   ========================================================= */
-class SpellbookDataModel extends foundry.abstract.TypeDataModel {
-  static defineSchema() {
-    const fields = foundry.data.fields;
-    return {
-      description: new fields.SchemaField({
-        value: new fields.HTMLField({ required: false, blank: true, initial: "" })
-      })
-    };
-  }
-}
-
-/* =========================================================
-   INITIALIZATION — Settings + Sheet + DataModel Registration
-   ========================================================= */
 Hooks.once("init", () => {
-  // Register DataModel for "spellbook" sub-type (fixes validation error)
-  CONFIG.Item.dataModels.spellbook = SpellbookDataModel;
+  // === THIS FIXES THE VALIDATION ERROR ===
+  if (game.system.id === "dnd5e") {
+    CONFIG.DND5E.itemTypes.push("spellbook");
+    CONFIG.Item.typeLabels.spellbook = "Spellbook";
+    CONFIG.Item.typeIcons.spellbook = "fas fa-book-open";
+  }
+  // =======================================
 
-  // Background image setting
   game.settings.register(MODULE_ID, "backgroundImage", {
     name: "Spellbook Background Image",
     hint: "Choose a parchment or custom background for all spellbooks.",
@@ -40,7 +24,6 @@ Hooks.once("init", () => {
     filePicker: "image"
   });
 
-  // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
     types: ["spellbook"],
     makeDefault: true,
@@ -49,37 +32,20 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED TO DELETE EXISTING IF >1
+   AUTO-CREATE SPELLBOOKS WHEN ACTOR HAS SPELLCASTING CLASS
    ========================================================= */
-Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
+Hooks.once("ready", () => {
+  game.actors.forEach(ensureSpellbooks);
+});
 
 Hooks.on("createActor", ensureSpellbooks);
-
-Hooks.on("updateActor", (actor, updates) => {
-  if (updates.items || updates.system) ensureSpellbooks(actor);
-});
-
-Hooks.on("createItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);  // Only for classes — no loop!
-});
-
-Hooks.on("deleteItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);  // Only for classes — no loop!
-});
+Hooks.on("updateActor", (actor) => ensureSpellbooks(actor));
+Hooks.on("createItem", (item) => item.parent && ensureSpellbooks(item.parent));
+Hooks.on("deleteItem", (item) => item.parent && ensureSpellbooks(item.parent));
 
 async function ensureSpellbooks(actor) {
   if (!actor || !["character", "npc"].includes(actor.type)) return;
 
-  // Find all existing spellbooks (type "spellbook" or flagged)
-  const existingSpellbooks = actor.items.filter(i => i.type === "spellbook" || i.flags[MODULE_ID]?.classId);
-
-  // If there is more than one spellbook, delete all of them first (just once)
-  if (existingSpellbooks.length > 1) {
-    const idsToDelete = existingSpellbooks.map(i => i.id);
-    await actor.deleteEmbeddedDocuments("Item", idsToDelete);
-  }
-
-  // Now create the latest correct spellbooks (one per class)
   const spellcastingClasses = actor.items.filter(i =>
     i.type === "class" &&
     ["wizard","sorcerer","cleric","druid","bard","ranger","paladin","warlock","artificer"]
@@ -87,7 +53,7 @@ async function ensureSpellbooks(actor) {
   );
 
   for (const cls of spellcastingClasses) {
-    // Skip if a book for this class already exists (in case length was 1)
+    // Avoid duplicates
     const hasBook = actor.items.some(i =>
       i.type === "spellbook" && i.flags[MODULE_ID]?.classId === cls.id
     );
@@ -133,6 +99,7 @@ function chooseIcon(className, alignment = "") {
 
 /* =========================================================
    THE ANIMATED LOOTABLE SPELLBOOK SHEET
+   (Spells are embedded inside the spellbook item → fully lootable!)
    ========================================================= */
 class UniversalSpellbookSheet extends ItemSheet {
   static get defaultOptions() {
