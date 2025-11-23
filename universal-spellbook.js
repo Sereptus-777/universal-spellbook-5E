@@ -1,10 +1,10 @@
-/* =========================================================
-   Universal Spellbook v5.5 — FIXED DETECTION & EVERYTHING
-   Detects via class.system.spellcasting + spells fallback
+/* ========================================================
+   Universal Spellbook v5.6 — FIXED FOR PCs ONLY
+   Limits to actor.type === "character" (no creatures/NPCs)
    Deletes old if >1, adds 1 per caster class
    No errors, no loop, icons fallback
    Fully lootable, animated, multi-class ready
-   ========================================================= */
+   ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
 
@@ -32,35 +32,35 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED DETECTION & CLEANUP
+   AUTO-CREATE SPELLBOOKS — FIXED FOR PCs ONLY
    ========================================================= */
-Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
+Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
-Hooks.on("createActor", ensureSpellbooks);
+Hooks.on("createActor", (actor) => {
+  if (actor.type === "character") ensureSpellbooks(actor);
+});
 
 Hooks.on("updateActor", (actor, updates) => {
-  if (updates.items || updates.system) ensureSpellbooks(actor);
+  if (actor.type === "character" && (updates.items || updates.system)) ensureSpellbooks(actor);
 });
 
 Hooks.on("createItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);
+  if (item.parent?.type === "character" && item.type === "class") ensureSpellbooks(item.parent);
 });
 
 Hooks.on("deleteItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);
+  if (item.parent?.type === "character" && item.type === "class") ensureSpellbooks(item.parent);
 });
 
 Hooks.on("renderActorSheet", (sheet) => {
-  ensureSpellbooks(sheet.actor);  // Force creation on sheet open
+  if (sheet.actor.type === "character") ensureSpellbooks(sheet.actor);  // Force on sheet open for PCs
 });
 
 async function ensureSpellbooks(actor) {
-  if (!actor || !["character", "npc"].includes(actor.type)) return;
-
-  // Find existing spellbooks
+  // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
-  // Delete old if >1
+  // If there is more than 1 spellbook, delete all of them first (just once)
   if (existingSpellbooks.length > 1) {
     const idsToDelete = existingSpellbooks.map(i => i.id);
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
@@ -77,7 +77,7 @@ async function ensureSpellbooks(actor) {
   }
 
   for (const cls of spellcastingClasses) {
-    // Skip if book exists
+    // Skip if a book for this class already exists (in case length was 1)
     const hasBook = actor.items.some(i =>
       i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook && i.flags[MODULE_ID]?.classId === cls.id
     );
