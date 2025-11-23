@@ -1,6 +1,6 @@
 /* ========================================================
-   Universal Spellbook v5.4 — FIXED VALIDATION, LOOP, & DUPLICATES
-   Defines DataModel for "spellbook" (no validation error)
+   Universal Spellbook v5.4 — FIXED VALIDATION WITH DATAMODEL
+   Defines TypeDataModel for "spellbook" (no validation error)
    Deletes all existing spellbooks if >1 on actor (just once)
    Adds only the latest correct ones (one per class)
    Fully lootable, animated, multi-class ready
@@ -9,14 +9,14 @@
 const MODULE_ID = "universal-spellbook-5E";
 
 /* =========================================================
-   CUSTOM DATAMODEL FOR "SPELLBOOK" SUB-TYPE (FIXES VALIDATION ERROR)
+   CUSTOM DATAMODEL FOR "SPELLBOOK" (FIXES VALIDATION ERROR)
    ========================================================= */
 class SpellbookDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
       description: new fields.SchemaField({
-        value: new fields.HTMLField({ required: false, blank: true, initial: "" })
+        value: new fields.HTMLField({ required: false, blank: true })
       })
     };
   }
@@ -26,7 +26,7 @@ class SpellbookDataModel extends foundry.abstract.TypeDataModel {
    INITIALIZATION — Settings + Sheet + DataModel Registration
    ========================================================= */
 Hooks.once("init", () => {
-  // Register DataModel for "spellbook" sub-type
+  // Register the DataModel for "spellbook" sub-type
   CONFIG.Item.dataModels.spellbook = SpellbookDataModel;
 
   // Background image setting
