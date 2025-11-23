@@ -1,8 +1,9 @@
 /* ========================================================
-   Universal Spellbook v5.6 — FIXED FOR PCs ONLY
-   Limits to actor.type === "character" (no creatures/NPCs)
-   Deletes old if >1, adds 1 per caster class
-   No errors, no loop, icons fallback
+   Universal Spellbook v5.6 — FIXED DETECTION & AUTO-POPULATE
+   Creates on PCs with spellcasting classes or spells
+   Auto-embeds actor's spells into the book
+   Deletes old if >1, adds 1 per class or generic
+   No errors, no loop, animation/UI fixed
    Fully lootable, animated, multi-class ready
    ======================================================== */
 
@@ -32,7 +33,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED FOR PCs ONLY
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION & AUTO-POPULATE
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -53,7 +54,7 @@ Hooks.on("deleteItem", (item) => {
 });
 
 Hooks.on("renderActorSheet", (sheet) => {
-  if (sheet.actor.type === "character") ensureSpellbooks(sheet.actor);  // Force on sheet open for PCs
+  if (sheet.actor.type === "character") ensureSpellbooks(sheet.actor);  // Force on sheet open
 });
 
 async function ensureSpellbooks(actor) {
@@ -66,15 +67,18 @@ async function ensureSpellbooks(actor) {
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
   }
 
-  // Get spellcasting classes (check class.system.spellcasting)
-  const spellcastingClasses = actor.items.filter(i =>
+  // Get spellcasting classes (check class.system.spellcasting.progression)
+  let spellcastingClasses = actor.items.filter(i =>
     i.type === "class" && i.system.spellcasting?.progression
   );
 
   // Fallback: If no classes but has spells, create a generic spellbook
   if (spellcastingClasses.length === 0 && actor.items.some(i => i.type === "spell")) {
-    spellcastingClasses.push({ name: "Generic", id: "generic" }); // Fake class for generic book
+    spellcastingClasses = [{ name: "Generic", id: "generic" }]; // Fake class for generic book
   }
+
+  // If no spellcasting, skip
+  if (spellcastingClasses.length === 0) return;
 
   for (const cls of spellcastingClasses) {
     // Skip if a book for this class already exists (in case length was 1)
@@ -86,13 +90,20 @@ async function ensureSpellbooks(actor) {
     const classLower = cls.name.toLowerCase();
     const alignLower = (actor.system.details?.alignment || "").toLowerCase();
 
-    await Item.create({
+    const spellbook = await Item.create({
       name: `${actor.name}'s ${cls.name} Spellbook`,
       type: "backpack",
       img: chooseIcon(classLower, alignLower),
       system: { description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` } },
       flags: { [MODULE_ID]: { isSpellbook: true, classId: cls.id } }
     }, { parent: actor });
+
+    // Auto-populate with copies of actor's spells
+    const actorSpells = actor.items.filter(i => i.type === "spell");
+    if (actorSpells.length > 0) {
+      const spellData = actorSpells.map(s => s.toObject());
+      await spellbook.createEmbeddedDocuments("Item", spellData);
+    }
   }
 }
 
