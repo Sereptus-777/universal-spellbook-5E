@@ -1,15 +1,16 @@
 /* ========================================================
-   Universal Spellbook v5.4 — FIXED VALIDATION WITH DATAMODEL
-   Defines TypeDataModel for "spellbook" (no validation error)
+   Universal Spellbook v5.5 — FIXED VALIDATION WITH QUALIFIED TYPE
+   Uses "universal-spellbook-5E.spellbook" as type (per docs)
    Deletes all existing spellbooks if >1 on actor (just once)
    Adds only the latest correct ones (one per class)
    Fully lootable, animated, multi-class ready
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
+const SPELLBOOK_TYPE = `${MODULE_ID}.spellbook`;
 
 /* =========================================================
-   CUSTOM DATAMODEL FOR "SPELLBOOK" (FIXES VALIDATION ERROR)
+   CUSTOM DATAMODEL FOR SPELLBOOK SUB-TYPE
    ========================================================= */
 class SpellbookDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
@@ -26,8 +27,8 @@ class SpellbookDataModel extends foundry.abstract.TypeDataModel {
    INITIALIZATION — Settings + Sheet + DataModel Registration
    ========================================================= */
 Hooks.once("init", () => {
-  // Register the DataModel for "spellbook" sub-type
-  CONFIG.Item.dataModels.spellbook = SpellbookDataModel;
+  // Register DataModel for sub-type
+  CONFIG.Item.dataModels[SPELLBOOK_TYPE] = SpellbookDataModel;
 
   // Background image setting
   game.settings.register(MODULE_ID, "backgroundImage", {
@@ -42,7 +43,7 @@ Hooks.once("init", () => {
 
   // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
-    types: ["spellbook"],
+    types: [SPELLBOOK_TYPE],
     makeDefault: true,
     label: "✦ Universal Spellbook"
   });
@@ -70,8 +71,8 @@ Hooks.on("deleteItem", (item) => {
 async function ensureSpellbooks(actor) {
   if (!actor || !["character", "npc"].includes(actor.type)) return;
 
-  // Find all existing spellbooks (type "spellbook" or flagged)
-  const existingSpellbooks = actor.items.filter(i => i.type === "spellbook" || i.flags[MODULE_ID]?.classId);
+  // Find all existing spellbooks (qualified type or flagged)
+  const existingSpellbooks = actor.items.filter(i => i.type === SPELLBOOK_TYPE || i.flags[MODULE_ID]?.classId);
 
   // If there is more than 1 spellbook, delete all of them first (just once)
   if (existingSpellbooks.length > 1) {
@@ -89,7 +90,7 @@ async function ensureSpellbooks(actor) {
   for (const cls of spellcastingClasses) {
     // Skip if a book for this class already exists (in case length was 1)
     const hasBook = actor.items.some(i =>
-      i.type === "spellbook" && i.flags[MODULE_ID]?.classId === cls.id
+      i.type === SPELLBOOK_TYPE && i.flags[MODULE_ID]?.classId === cls.id
     );
     if (hasBook) continue;
 
@@ -98,7 +99,7 @@ async function ensureSpellbooks(actor) {
 
     await Item.create({
       name: `${actor.name}'s ${cls.name} Spellbook`,
-      type: "spellbook",
+      type: SPELLBOOK_TYPE,
       img: chooseIcon(classLower, alignLower),
       system: { description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` } },
       flags: { [MODULE_ID]: { classId: cls.id } }
