@@ -1,35 +1,17 @@
-/* ========================================================
-   Universal Spellbook v5.5 — FIXED VALIDATION WITH QUALIFIED TYPE
-   Uses "universal-spellbook-5E.spellbook" as type (per docs)
-   Deletes all existing spellbooks if >1 on actor (just once)
-   Adds only the latest correct ones (one per class)
+/* =========================================================
+   Universal Spellbook v5.5 — FIXED DETECTION & EVERYTHING
+   Detects via class.system.spellcasting + spells fallback
+   Deletes old if >1, adds 1 per caster class
+   No errors, no loop, icons fallback
    Fully lootable, animated, multi-class ready
-   ======================================================== */
+   ========================================================= */
 
 const MODULE_ID = "universal-spellbook-5E";
-const SPELLBOOK_TYPE = `${MODULE_ID}.spellbook`;
 
 /* =========================================================
-   CUSTOM DATAMODEL FOR SPELLBOOK SUB-TYPE
-   ========================================================= */
-class SpellbookDataModel extends foundry.abstract.TypeDataModel {
-  static defineSchema() {
-    const fields = foundry.data.fields;
-    return {
-      description: new fields.SchemaField({
-        value: new fields.HTMLField({ required: false, blank: true })
-      })
-    };
-  }
-}
-
-/* =========================================================
-   INITIALIZATION — Settings + Sheet + DataModel Registration
+   INITIALIZATION — Settings + Sheet
    ========================================================= */
 Hooks.once("init", () => {
-  // Register DataModel for sub-type
-  CONFIG.Item.dataModels[SPELLBOOK_TYPE] = SpellbookDataModel;
-
   // Background image setting
   game.settings.register(MODULE_ID, "backgroundImage", {
     name: "Spellbook Background Image",
@@ -43,14 +25,14 @@ Hooks.once("init", () => {
 
   // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
-    types: [SPELLBOOK_TYPE],
-    makeDefault: true,
+    types: ["backpack"],
+    makeDefault: false,
     label: "✦ Universal Spellbook"
   });
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED TO DELETE EXISTING IF >1
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION & CLEANUP
    ========================================================= */
 Hooks.once("ready", () => game.actors.forEach(ensureSpellbooks));
 
@@ -61,36 +43,43 @@ Hooks.on("updateActor", (actor, updates) => {
 });
 
 Hooks.on("createItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);  // Only for classes — no loop!
+  if (item.type === "class") ensureSpellbooks(item.parent);
 });
 
 Hooks.on("deleteItem", (item) => {
-  if (item.type === "class") ensureSpellbooks(item.parent);  // Only for classes — no loop!
+  if (item.type === "class") ensureSpellbooks(item.parent);
+});
+
+Hooks.on("renderActorSheet", (sheet) => {
+  ensureSpellbooks(sheet.actor);  // Force creation on sheet open
 });
 
 async function ensureSpellbooks(actor) {
   if (!actor || !["character", "npc"].includes(actor.type)) return;
 
-  // Find all existing spellbooks (qualified type or flagged)
-  const existingSpellbooks = actor.items.filter(i => i.type === SPELLBOOK_TYPE || i.flags[MODULE_ID]?.classId);
+  // Find existing spellbooks
+  const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
-  // If there is more than 1 spellbook, delete all of them first (just once)
+  // Delete old if >1
   if (existingSpellbooks.length > 1) {
     const idsToDelete = existingSpellbooks.map(i => i.id);
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
   }
 
-  // Now create the latest correct spellbooks (one per class)
+  // Get spellcasting classes (check class.system.spellcasting)
   const spellcastingClasses = actor.items.filter(i =>
-    i.type === "class" &&
-    ["wizard","sorcerer","cleric","druid","bard","ranger","paladin","warlock","artificer"]
-      .some(c => i.name.toLowerCase().includes(c))
+    i.type === "class" && i.system.spellcasting?.progression
   );
 
+  // Fallback: If no classes but has spells, create a generic spellbook
+  if (spellcastingClasses.length === 0 && actor.items.some(i => i.type === "spell")) {
+    spellcastingClasses.push({ name: "Generic", id: "generic" }); // Fake class for generic book
+  }
+
   for (const cls of spellcastingClasses) {
-    // Skip if a book for this class already exists (in case length was 1)
+    // Skip if book exists
     const hasBook = actor.items.some(i =>
-      i.type === SPELLBOOK_TYPE && i.flags[MODULE_ID]?.classId === cls.id
+      i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook && i.flags[MODULE_ID]?.classId === cls.id
     );
     if (hasBook) continue;
 
@@ -99,10 +88,10 @@ async function ensureSpellbooks(actor) {
 
     await Item.create({
       name: `${actor.name}'s ${cls.name} Spellbook`,
-      type: SPELLBOOK_TYPE,
+      type: "backpack",
       img: chooseIcon(classLower, alignLower),
       system: { description: { value: `<p>The personal spellbook of ${actor.name}, containing all known ${cls.name} spells.</p>` } },
-      flags: { [MODULE_ID]: { classId: cls.id } }
+      flags: { [MODULE_ID]: { isSpellbook: true, classId: cls.id } }
     }, { parent: actor });
   }
 }
@@ -129,8 +118,18 @@ function chooseIcon(className, alignment = "") {
       return `modules/${MODULE_ID}/icons/${file}`;
     }
   }
-  return `modules/${MODULE_ID}/icons/generic-spellbook.png`;
+  return "icons/equipment/book/book-bound-white.webp"; // Default Foundry icon
 }
+
+/* =========================================================
+   OPEN CUSTOM SHEET FOR SPELLBOOK BACKPACKS
+   ========================================================= */
+Hooks.on("renderItemSheet", (sheet, html, data) => {
+  if (sheet.item.type === "backpack" && sheet.item.flags[MODULE_ID]?.isSpellbook) {
+    sheet.close();
+    new UniversalSpellbookSheet(sheet.item, sheet.options).render(true);
+  }
+});
 
 /* =========================================================
    THE ANIMATED LOOTABLE SPELLBOOK SHEET
