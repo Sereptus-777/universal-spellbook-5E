@@ -1,11 +1,10 @@
 /* ========================================================
-   Universal Spellbook v6.0 — VERSION CHECK + WIZARD FOCUS + NPC DRAG
-   - Updates only on new module version (cleanup + recreate)
-   - Limits to actors with "wizard" class or wizard spellcasting
-   - Auto-creates on NPCs when dragged to canvas (lootable)
-   - Deletes old if >1, adds 1 per wizard class
-   - No errors, no loop, animation/UI, auto-populate spells
-   - Fully lootable, animated, multi-class ready
+   Universal Spellbook v6.0 — AUTO-POPULATE FROM COMPENDIUM
+   Populates spellbook with class spells from "dnd5e.spells"
+   Wizard class/spellcasting only
+   Updates only on new module version (cleanup + recreate)
+   Deletes old if >1, adds 1 per wizard class
+   No errors, no loop, animation/UI, lootable
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
@@ -43,14 +42,14 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   VERSION CHECK & AUTO-CREATE ON UPDATE
+   VERSION CHECK & AUTO-UPDATE ON NEW VERSION
    ========================================================= */
 Hooks.once("ready", async () => {
   const currentVersion = "6.0"; // Bump this for future updates
   const storedVersion = game.settings.get(MODULE_ID, "moduleVersion");
 
   if (storedVersion !== currentVersion) {
-    // New version detected — cleanup and recreate for all relevant actors
+    // New version — cleanup and recreate for all actors
     for (const actor of game.actors) {
       await cleanupAndRecreate(actor);
     }
@@ -64,7 +63,7 @@ Hooks.once("ready", async () => {
 });
 
 /* =========================================================
-   HOOKS FOR CHANGES & NPC DRAG TO CANVAS
+   HOOKS FOR CHANGES
    ========================================================= */
 Hooks.on("createActor", ensureSpellbook);
 
@@ -80,20 +79,10 @@ Hooks.on("deleteItem", (item) => {
   if (item.type === "class") ensureSpellbook(item.parent);
 });
 
-// Auto-create on NPCs when dragged to canvas
-Hooks.on("createToken", async (tokenDocument) => {
-  const actor = tokenDocument.actor;
-  if (actor.type === "npc" && actor.items.some(i => i.type === "class" && i.name.toLowerCase().includes("wizard"))) {
-    await ensureSpellbook(actor);
-  }
-});
-
 /* =========================================================
    CLEANUP & RECREATE ON VERSION UPDATE
    ========================================================= */
 async function cleanupAndRecreate(actor) {
-  if (!actor) return;
-
   // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
@@ -111,8 +100,6 @@ async function cleanupAndRecreate(actor) {
    ENSURE SPELLBOOK — LIMIT TO WIZARD CLASS/SPELLCASTING
    ========================================================= */
 async function ensureSpellbook(actor) {
-  if (!actor) return;
-
   // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
@@ -122,7 +109,7 @@ async function ensureSpellbook(actor) {
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
   }
 
-  // Get wizard classes (check name or spellcasting progression for wizard-like)
+  // Get wizard classes (check name or spellcasting progression for wizard)
   const wizardClasses = actor.items.filter(i =>
     i.type === "class" && (i.name.toLowerCase().includes("wizard") || i.system.spellcasting?.progression === "full")
   );
