@@ -1,10 +1,11 @@
 /* ========================================================
-   Universal Spellbook v6.0 — AUTO-POPULATE FROM COMPENDIUM
-   Populates spellbook with class spells from "dnd5e.spells"
-   Wizard class/spellcasting only
-   Updates only on new module version (cleanup + recreate)
-   Deletes old if >1, adds 1 per wizard class
-   No errors, no loop, animation/UI, lootable
+   Universal Spellbook v6.0 — VERSION CHECK + WIZARD FOCUS + NPC DRAG
+   - Updates only on new module version (cleanup + recreate)
+   - Limits to actors with "wizard" class or wizard spellcasting
+   - Auto-creates on NPCs when dragged to canvas (lootable)
+   - Deletes old if >1, adds 1 per wizard class
+   - No errors, no loop, animation/UI, auto-populate spells
+   - Fully lootable, animated, multi-class ready
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
@@ -63,7 +64,7 @@ Hooks.once("ready", async () => {
 });
 
 /* =========================================================
-   HOOKS FOR CHANGES
+   HOOKS FOR CHANGES & NPC DRAG TO CANVAS
    ========================================================= */
 Hooks.on("createActor", ensureSpellbook);
 
@@ -77,6 +78,14 @@ Hooks.on("createItem", (item) => {
 
 Hooks.on("deleteItem", (item) => {
   if (item.type === "class") ensureSpellbook(item.parent);
+});
+
+// Auto-create on NPCs when dragged to canvas
+Hooks.on("createToken", async (tokenDocument) => {
+  const actor = tokenDocument.actor;
+  if (actor.type === "npc" && actor.items.some(i => i.type === "class" && i.name.toLowerCase().includes("wizard"))) {
+    await ensureSpellbook(actor);
+  }
 });
 
 /* =========================================================
@@ -109,7 +118,7 @@ async function ensureSpellbook(actor) {
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
   }
 
-  // Get wizard classes (check name or spellcasting progression for wizard)
+  // Get wizard classes (check name or spellcasting progression for wizard-like)
   const wizardClasses = actor.items.filter(i =>
     i.type === "class" && (i.name.toLowerCase().includes("wizard") || i.system.spellcasting?.progression === "full")
   );
