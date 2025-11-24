@@ -1,11 +1,10 @@
 /* ========================================================
-   Universal Spellbook v6.0 — VERSION CHECK + WIZARD FOCUS + NPC DRAG
-   - Updates only on new module version (cleanup + recreate)
-   - Limits to actors with "wizard" class or wizard spellcasting
-   - Auto-creates on NPCs when dragged to canvas (lootable)
-   - Deletes old if >1, adds 1 per wizard class
-   - No errors, no loop, animation/UI, auto-populate spells
-   - Fully lootable, animated, multi-class ready
+   Universal Spellbook v5.7 — FIXED DETECTION FOR PCs
+   Creates spellbooks for PCs with spellcasting classes, spell slots, or spells
+   Deletes old if >1, adds 1 per class or generic
+   Auto-populates with actor's spells
+   No errors, no loop, animation/UI
+   Fully lootable, animated, multi-class ready
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
@@ -25,15 +24,6 @@ Hooks.once("init", () => {
     filePicker: "image"
   });
 
-  // Stored module version for update detection
-  game.settings.register(MODULE_ID, "moduleVersion", {
-    name: "Module Version",
-    scope: "world",
-    config: false,
-    type: String,
-    default: "0.0.0"
-  });
-
   // Register the beautiful animated sheet
   Items.registerSheet(MODULE_ID, UniversalSpellbookSheet, {
     types: ["backpack"],
@@ -43,90 +33,58 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   VERSION CHECK & AUTO-UPDATE ON NEW VERSION
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR PCs
    ========================================================= */
-Hooks.once("ready", async () => {
-  const currentVersion = "6.0"; // Bump this for future updates
-  const storedVersion = game.settings.get(MODULE_ID, "moduleVersion");
+Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
-  if (storedVersion !== currentVersion) {
-    // New version — cleanup and recreate for all actors
-    for (const actor of game.actors) {
-      await cleanupAndRecreate(actor);
-    }
-    await game.settings.set(MODULE_ID, "moduleVersion", currentVersion);
-  } else {
-    // Normal run — just ensure for existing actors
-    for (const actor of game.actors) {
-      await ensureSpellbook(actor);
-    }
-  }
+Hooks.on("createActor", (actor) => {
+  if (actor.type === "character") ensureSpellbooks(actor);
 });
 
-/* =========================================================
-   HOOKS FOR CHANGES & NPC DRAG TO CANVAS
-   ========================================================= */
-Hooks.on("createActor", ensureSpellbook);
-
 Hooks.on("updateActor", (actor, updates) => {
-  if (updates.items || updates.system) ensureSpellbook(actor);
+  if (actor.type === "character" && (updates.items || updates.system)) ensureSpellbooks(actor);
 });
 
 Hooks.on("createItem", (item) => {
-  if (item.type === "class") ensureSpellbook(item.parent);
+  if (item.parent?.type === "character" && item.type === "class") ensureSpellbooks(item.parent);
 });
 
 Hooks.on("deleteItem", (item) => {
-  if (item.type === "class") ensureSpellbook(item.parent);
+  if (item.parent?.type === "character" && item.type === "class") ensureSpellbooks(item.parent);
 });
 
-// Auto-create on NPCs when dragged to canvas
-Hooks.on("createToken", async (tokenDocument) => {
-  const actor = tokenDocument.actor;
-  if (actor.type === "npc" && actor.items.some(i => i.type === "class" && i.name.toLowerCase().includes("wizard"))) {
-    await ensureSpellbook(actor);
-  }
+Hooks.on("renderActorSheet", (sheet) => {
+  if (sheet.actor.type === "character") ensureSpellbooks(sheet.actor);  // Force on sheet open
 });
 
-/* =========================================================
-   CLEANUP & RECREATE ON VERSION UPDATE
-   ========================================================= */
-async function cleanupAndRecreate(actor) {
+async function ensureSpellbooks(actor) {
   // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
-  // Delete all old spellbooks
-  if (existingSpellbooks.length > 0) {
-    const idsToDelete = existingSpellbooks.map(i => i.id);
-    await actor.deleteEmbeddedDocuments("Item", idsToDelete);
-  }
-
-  // Recreate the latest
-  await ensureSpellbook(actor);
-}
-
-/* =========================================================
-   ENSURE SPELLBOOK — LIMIT TO WIZARD CLASS/SPELLCASTING
-   ========================================================= */
-async function ensureSpellbook(actor) {
-  // Find all existing spellbooks (backpack type with flag)
-  const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
-
-  // If there is more than 1 spellbook, delete all of them first
+  // If there is more than 1 spellbook, delete all of them first (just once)
   if (existingSpellbooks.length > 1) {
     const idsToDelete = existingSpellbooks.map(i => i.id);
     await actor.deleteEmbeddedDocuments("Item", idsToDelete);
   }
 
-  // Get wizard classes (check name or spellcasting progression for wizard-like)
-  const wizardClasses = actor.items.filter(i =>
-    i.type === "class" && (i.name.toLowerCase().includes("wizard") || i.system.spellcasting?.progression === "full")
+  // Detect if actor is spellcaster (has spellcasting classes, spell slots, or spells)
+  const hasSpellcasting = actor.items.some(i =>
+    i.type === "class" && i.system.spellcasting?.progression
+  ) || Object.values(actor.system.spells || {}).some(p => p.max > 0) || actor.items.some(i => i.type === "spell");
+
+  if (!hasSpellcasting) return;
+
+  // Get spellcasting classes (for multi-book if multiclass)
+  let spellcastingClasses = actor.items.filter(i =>
+    i.type === "class" && i.system.spellcasting?.progression
   );
 
-  // Skip if no wizard
-  if (wizardClasses.length === 0) return;
+  // Fallback: If no classes but has spells/slots, create a generic spellbook
+  if (spellcastingClasses.length === 0) {
+    spellcastingClasses = [{ name: "Generic", id: "generic" }];
+  }
 
-  for (const cls of wizardClasses) {
+  for (const cls of spellcastingClasses) {
     // Skip if a book for this class already exists
     const hasBook = actor.items.some(i =>
       i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook && i.flags[MODULE_ID]?.classId === cls.id
