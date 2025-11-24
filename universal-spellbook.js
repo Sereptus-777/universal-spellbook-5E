@@ -244,4 +244,35 @@ class UniversalSpellbookSheet extends ItemSheet {
 
     // Delete spell from book
     html.find(".spell-delete").on("click", (e) => {
-      const spellId = e.currentTarget
+      const spellId = e.currentTarget.closest(".spell-entry").dataset.id;
+      this.document.deleteEmbeddedDocuments("Item", [spellId]);
+    });
+
+    // Drop spells directly onto the open book
+    html[0].addEventListener("drop", async (e) => {
+      e.preventDefault();
+      let data;
+      try { data = JSON.parse(e.dataTransfer.getData("text/plain")); } catch { return; }
+      if (data.type === "Item" && data.data?.type === "spell") {
+        const spell = await fromUuid(data.uuid);
+        await this.document.createEmbeddedDocuments("Item", [spell.toObject()]);
+      }
+    });
+  }
+
+  // Smooth "pick up the book" animation when opened from inventory
+  async _renderInner(data) {
+    const html = await super._renderInner(data);
+    const content = this.element[0].querySelector(".window-content");
+
+    content.style.opacity = 0;
+    content.style.transform = "scale(0.6) translateY(40px)";
+    requestAnimationFrame(() => {
+      content.style.transition = "all 0.7s cubic-bezier(0.22,1,0.36,1)";
+      content.style.opacity = 1;
+      content.style.transform = "scale(1) translateY(0)";
+    });
+
+    return html;
+  }
+}
