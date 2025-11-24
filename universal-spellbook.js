@@ -1,6 +1,6 @@
 /* ========================================================
-   Universal Spellbook v5.7 — FIXED DETECTION FOR ANY SPELLCASTER
-   Creates for PCs with spell slots, spells, or spellcasting class
+   Universal Spellbook v5.8 — FIXED DETECTION FOR SPELLCASTERS
+   Creates for PCs with spell slots, spells, or spellcasting classes
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
    No errors, no loop, animation/UI, lootable
@@ -32,7 +32,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR ANY SPELLCASTER
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR SPELLCASTERS
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -57,6 +57,9 @@ Hooks.on("renderActorSheet", (sheet) => {
 });
 
 async function ensureSpellbooks(actor) {
+  // Log for debugging
+  console.log(`Checking spellbook for actor ${actor.name} (${actor.type})`);
+
   // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
@@ -68,14 +71,16 @@ async function ensureSpellbooks(actor) {
 
   // Detect if actor is spellcaster (has spellcasting classes, spell slots, or spells)
   const isSpellcaster = actor.items.some(i =>
-    i.type === "class" && i.system.spellcasting?.progression
+    i.type === "class" && i.system.spellcasting?.progression !== "none"
   ) || Object.values(actor.system.spells || {}).some(p => p.max > 0) || actor.items.some(i => i.type === "spell");
+
+  console.log(`Is spellcaster: ${isSpellcaster}`);
 
   if (!isSpellcaster) return;
 
   // Get spellcasting classes (for multi-book if multiclass)
   let spellcastingClasses = actor.items.filter(i =>
-    i.type === "class" && i.system.spellcasting?.progression
+    i.type === "class" && i.system.spellcasting?.progression !== "none"
   );
 
   // Fallback: If no classes but has spells/slots, create a generic spellbook
