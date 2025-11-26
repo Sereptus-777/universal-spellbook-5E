@@ -1,6 +1,19 @@
+### What the Code Will Do
+This code is the complete, ready-to-use `universal-spellbook.js` file for your module. It creates a themed, lootable spellbook item (using "backpack" type to avoid errors) for every PC that is a spellcaster (has spell slots, spells, or spellcasting classes). It deletes old duplicates if >1, auto-populates with the actor's spells, and opens with smooth animation, UI tabs (All/Prepared/Rituals), search, cast (right-click), edit (double-click), prepare toggle, delete, and drag-drop.
+
+No infinite loops, no validation errors. Limited to PCs (no creatures).
+
+### Update Instructions
+- Uninstall and reinstall the module (Manage Modules → Uninstall Universal Spellbook → Hard refresh (Ctrl + Shift + R) → Install using manifest URL → Enable).
+- Or, if you just updated on GitHub, hard refresh only — but uninstall/reinstall is safer to clear cache.
+
+Open a player sheet with spells/class — spellbook will appear in inventory.
+
+### Complete Code
+```javascript
 /* ========================================================
-   Universal Spellbook v5.8 — FIXED DETECTION FOR SPELLCASTERS
-   Creates for PCs with spell slots, spells, or spellcasting classes
+   Universal Spellbook v5.7 — FIXED DETECTION FOR ANY SPELLCASTER
+   Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
    No errors, no loop, animation/UI, lootable
@@ -57,9 +70,6 @@ Hooks.on("renderActorSheet", (sheet) => {
 });
 
 async function ensureSpellbooks(actor) {
-  // Log for debugging
-  console.log(`Checking spellbook for actor ${actor.name} (${actor.type})`);
-
   // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
@@ -73,8 +83,6 @@ async function ensureSpellbooks(actor) {
   const isSpellcaster = actor.items.some(i =>
     i.type === "class" && i.system.spellcasting?.progression !== "none"
   ) || Object.values(actor.system.spells || {}).some(p => p.max > 0) || actor.items.some(i => i.type === "spell");
-
-  console.log(`Is spellcaster: ${isSpellcaster}`);
 
   if (!isSpellcaster) return;
 
@@ -281,3 +289,4 @@ class UniversalSpellbookSheet extends ItemSheet {
     return html;
   }
 }
+```
