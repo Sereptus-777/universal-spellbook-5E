@@ -1,18 +1,5 @@
-### What the Code Will Do
-This code is the complete, ready-to-use `universal-spellbook.js` file for your module. It creates a themed, lootable spellbook item (using "backpack" type to avoid errors) for every PC that is a spellcaster (has spell slots, spells, or spellcasting classes). It deletes old duplicates if >1, auto-populates with the actor's spells, and opens with smooth animation, UI tabs (All/Prepared/Rituals), search, cast (right-click), edit (double-click), prepare toggle, delete, and drag-drop.
-
-No infinite loops, no validation errors. Limited to PCs (no creatures).
-
-### Update Instructions
-- Uninstall and reinstall the module (Manage Modules → Uninstall Universal Spellbook → Hard refresh (Ctrl + Shift + R) → Install using manifest URL → Enable).
-- Or, if you just updated on GitHub, hard refresh only — but uninstall/reinstall is safer to clear cache.
-
-Open a player sheet with spells/class — spellbook will appear in inventory.
-
-### Complete Code
-```javascript
 /* ========================================================
-   Universal Spellbook v5.7 — FIXED DETECTION FOR ANY SPELLCASTER
+   Universal Spellbook v5.8 — BROADER DETECTION FOR SPELLCASTERS
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
@@ -45,7 +32,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR SPELLCASTERS
+   AUTO-CREATE SPELLBOOKS — BROADER DETECTION FOR SPELLCASTERS
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -289,4 +276,3 @@ class UniversalSpellbookSheet extends ItemSheet {
     return html;
   }
 }
-```
