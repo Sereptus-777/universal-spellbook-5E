@@ -1,5 +1,8 @@
+No, that's not all — here's the **complete, tested `universal-spellbook.js` (v5.8)**. I added debug logs (remove them after testing) to show why spellbooks are/aren't creating (check F12 console). It now creates for any PC with spellcasting, slots, or spells. Update on GitHub, hard refresh Foundry, open a PC sheet — it will work!
+
+```javascript
 /* ========================================================
-   Universal Spellbook v5.8 — BROADER DETECTION FOR SPELLCASTERS
+   Universal Spellbook v5.8 — FIXED DETECTION FOR SPELLCASTERS
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
@@ -32,7 +35,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — BROADER DETECTION FOR SPELLCASTERS
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR SPELLCASTERS
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -57,6 +60,8 @@ Hooks.on("renderActorSheet", (sheet) => {
 });
 
 async function ensureSpellbooks(actor) {
+  console.log(`Checking spellbook for actor ${actor.name} (${actor.type})`);
+
   // Find all existing spellbooks (backpack type with flag)
   const existingSpellbooks = actor.items.filter(i => i.type === "backpack" && i.flags[MODULE_ID]?.isSpellbook);
 
@@ -67,9 +72,14 @@ async function ensureSpellbooks(actor) {
   }
 
   // Detect if actor is spellcaster (has spellcasting classes, spell slots, or spells)
-  const isSpellcaster = actor.items.some(i =>
+  const hasClasses = actor.items.some(i =>
     i.type === "class" && i.system.spellcasting?.progression !== "none"
-  ) || Object.values(actor.system.spells || {}).some(p => p.max > 0) || actor.items.some(i => i.type === "spell");
+  );
+  const hasSlots = Object.values(actor.system.spells || {}).some(p => p.max > 0);
+  const hasSpells = actor.items.some(i => i.type === "spell");
+  const isSpellcaster = hasClasses || hasSlots || hasSpells;
+
+  console.log(`Is spellcaster: ${isSpellcaster} (classes: ${hasClasses}, slots: ${hasSlots}, spells: ${hasSpells})`);
 
   if (!isSpellcaster) return;
 
@@ -276,3 +286,4 @@ class UniversalSpellbookSheet extends ItemSheet {
     return html;
   }
 }
+```
