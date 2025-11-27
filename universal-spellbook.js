@@ -1,5 +1,5 @@
 /* ========================================================
-   Universal Spellbook v5.8 — FIXED DETECTION FOR ALL CASTERS
+   Universal Spellbook v5.7 — FIXED DETECTION FOR ANY SPELLCASTER
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
@@ -32,7 +32,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR ALL CASTERS
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR ANY SPELLCASTER
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -68,14 +68,14 @@ async function ensureSpellbooks(actor) {
 
   // Detect if actor is spellcaster (has spellcasting classes, spell slots, or spells)
   const isSpellcaster = actor.items.some(i =>
-    i.type === "class" && i.system.spellcasting?.progression !== "none"
+    i.type === "class" && i.system.spellcasting?.progression
   ) || Object.values(actor.system.spells || {}).some(p => p.max > 0) || actor.items.some(i => i.type === "spell");
 
   if (!isSpellcaster) return;
 
   // Get spellcasting classes (for multi-book if multiclass)
   let spellcastingClasses = actor.items.filter(i =>
-    i.type === "class" && i.system.spellcasting?.progression !== "none"
+    i.type === "class" && i.system.spellcasting?.progression
   );
 
   // Fallback: If no classes but has spells/slots, create a generic spellbook
