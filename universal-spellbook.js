@@ -1,6 +1,6 @@
 /* ========================================================
-   Universal Spellbook v5.9 — FIXED FAVORITES + DETECTION
-   Adds getFavoriteData for favorites tab
+   Universal Spellbook v5.9 — FIXED FAVORITES & USE ERROR
+   Adds getFavoriteData and getCardData for favorites and use
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
@@ -10,7 +10,7 @@
 const MODULE_ID = "universal-spellbook-5E";
 
 /* =========================================================
-   EXTEND ITEM CLASS FOR FAVORITES FIX
+   EXTEND ITEM CLASS FOR FAVORITES & USE FIX
    ========================================================= */
 class SpellbookItem extends Item {
   getFavoriteData() {
@@ -22,13 +22,21 @@ class SpellbookItem extends Item {
       uuid: this.uuid
     };
   }
+
+  async getCardData() {
+    // Return a simple chat card for the spellbook (e.g., list spells)
+    return {
+      title: this.name,
+      content: `<p>${this.system.description.value}</p><p>Contains ${this.items.size} spells.</p>`
+    };
+  }
 }
 
 /* =========================================================
    INITIALIZATION — Settings + Sheet + Item Extension
    ========================================================= */
 Hooks.once("init", () => {
-  // Extend Item class for all items (safe, only adds method)
+  // Extend Item class for all items (safe, only adds methods)
   CONFIG.Item.documentClass = SpellbookItem;
 
   // Background image setting
