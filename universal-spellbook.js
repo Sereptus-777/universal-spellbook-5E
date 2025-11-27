@@ -1,6 +1,6 @@
 /* ========================================================
-   Universal Spellbook v5.9 — FIXED USE ERROR + DETECTION
-   Adds getCardData for item use (no TypeError)
+   Universal Spellbook v5.9 — FIXED DETECTION & FAVORITES/USE
+   Adds getFavoriteData and getCardData for favorites and use (no errors)
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
@@ -10,7 +10,7 @@
 const MODULE_ID = "universal-spellbook-5E";
 
 /* =========================================================
-   EXTEND ITEM CLASS FOR USE & FAVORITES FIX
+   EXTEND ITEM CLASS FOR FAVORITES & USE FIX
    ========================================================= */
 class SpellbookItem extends Item {
   getFavoriteData() {
