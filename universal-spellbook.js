@@ -1,11 +1,9 @@
 /* ========================================================
-   Universal Spellbook v5.9 — FIXED SHEET OPENING & ENHANCED ANIMATION
-   Opens with 3D book flip animation (like opening a book)
-   Ensures custom sheet triggers for flagged backpacks
+   Universal Spellbook v5.8 — FIXED DETECTION FOR ALL CASTERS
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
-   No errors, no loop, lootable
+   No errors, no loop, animation/UI, lootable
    ======================================================== */
 
 const MODULE_ID = "universal-spellbook-5E";
@@ -34,7 +32,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR SPELLCASTERS
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR ALL CASTERS
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -138,9 +136,9 @@ function chooseIcon(className, alignment = "") {
 }
 
 /* =========================================================
-   OPEN CUSTOM SHEET FOR SPELLBOOK BACKPACKS (FIXED TRIGGER)
+   OPEN CUSTOM SHEET FOR SPELLBOOK BACKPACKS
    ========================================================= */
-Hooks.on("preRenderItemSheet", (sheet, html, data) => {
+Hooks.on("renderItemSheet", (sheet, html, data) => {
   if (sheet.item.type === "backpack" && sheet.item.flags[MODULE_ID]?.isSpellbook) {
     sheet.close();
     new UniversalSpellbookSheet(sheet.item, sheet.options).render(true);
@@ -148,7 +146,7 @@ Hooks.on("preRenderItemSheet", (sheet, html, data) => {
 });
 
 /* =========================================================
-   THE ANIMATED LOOTABLE SPELLBOOK SHEET (ENHANCED FLIP ANIMATION)
+   THE ANIMATED LOOTABLE SPELLBOOK SHEET
    ========================================================= */
 class UniversalSpellbookSheet extends ItemSheet {
   static get defaultOptions() {
@@ -262,17 +260,17 @@ class UniversalSpellbookSheet extends ItemSheet {
     });
   }
 
-  // Smooth "pick up & flip open" animation when opened from inventory
+  // Smooth "pick up the book" animation when opened from inventory
   async _renderInner(data) {
     const html = await super._renderInner(data);
     const content = this.element[0].querySelector(".window-content");
 
     content.style.opacity = 0;
-    content.style.transform = "perspective(800px) rotateY(-90deg) scale(0.6)";
+    content.style.transform = "scale(0.6) translateY(40px)";
     requestAnimationFrame(() => {
-      content.style.transition = "all 0.8s cubic-bezier(0.22,1,0.36,1)";
+      content.style.transition = "all 0.7s cubic-bezier(0.22,1,0.36,1)";
       content.style.opacity = 1;
-      content.style.transform = "perspective(800px) rotateY(0deg) scale(1)";
+      content.style.transform = "scale(1) translateY(0)";
     });
 
     return html;
