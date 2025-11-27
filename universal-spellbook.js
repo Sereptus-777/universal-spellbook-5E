@@ -24,15 +24,11 @@ class SpellbookItem extends Item {
   }
 
   async getCardData() {
-    // Dummy chat card to prevent error (customize as needed)
+    // Simple chat card for spellbook use (e.g., "Opened spellbook" or list spells)
     return {
       title: this.name,
       content: `<p>${this.system.description.value}</p><p>Contains ${this.items.size} spells.</p>`
     };
-  }
-
-  get hasEffects() {
-    return this.effects.size > 0; // Dummy to prevent sheet error
   }
 }
 
