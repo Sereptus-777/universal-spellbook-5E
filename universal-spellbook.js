@@ -1,5 +1,6 @@
 /* ========================================================
-   Universal Spellbook v5.7 — FIXED DETECTION FOR ANY SPELLCASTER
+   Universal Spellbook v5.9 — FIXED FAVORITES ERROR
+   Adds getFavoriteData to spellbook items
    Creates for PCs with spell slots, spells, or spellcasting class
    Deletes old if >1, adds 1 per class or generic
    Auto-populates with actor's spells
@@ -9,9 +10,27 @@
 const MODULE_ID = "universal-spellbook-5E";
 
 /* =========================================================
+   EXTEND ITEM CLASS TO FIX FAVORITES ERROR
+   ========================================================= */
+class SpellbookItem extends Item {
+  getFavoriteData() {
+    return {
+      name: this.name,
+      img: this.img,
+      type: this.type,
+      system: this.system,
+      uuid: this.uuid
+    };
+  }
+}
+
+/* =========================================================
    INITIALIZATION — Settings + Sheet
    ========================================================= */
 Hooks.once("init", () => {
+  // Register custom Item subclass for spellbooks (fixes favorites)
+  CONFIG.Item.documentClass = SpellbookItem;
+
   // Background image setting
   game.settings.register(MODULE_ID, "backgroundImage", {
     name: "Spellbook Background Image",
@@ -32,7 +51,7 @@ Hooks.once("init", () => {
 });
 
 /* =========================================================
-   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR ANY SPELLCASTER
+   AUTO-CREATE SPELLBOOKS — FIXED DETECTION FOR SPELLCASTERS
    ========================================================= */
 Hooks.once("ready", () => game.actors.filter(a => a.type === "character").forEach(ensureSpellbooks));
 
@@ -68,14 +87,14 @@ async function ensureSpellbooks(actor) {
 
   // Detect if actor is spellcaster (has spellcasting classes, spell slots, or spells)
   const isSpellcaster = actor.items.some(i =>
-    i.type === "class" && i.system.spellcasting?.progression
+    i.type === "class" && i.system.spellcasting?.progression !== "none"
   ) || Object.values(actor.system.spells || {}).some(p => p.max > 0) || actor.items.some(i => i.type === "spell");
 
   if (!isSpellcaster) return;
 
   // Get spellcasting classes (for multi-book if multiclass)
   let spellcastingClasses = actor.items.filter(i =>
-    i.type === "class" && i.system.spellcasting?.progression
+    i.type === "class" && i.system.spellcasting?.progression !== "none"
   );
 
   // Fallback: If no classes but has spells/slots, create a generic spellbook
